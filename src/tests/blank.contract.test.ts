@@ -11,6 +11,7 @@ import {
   Wallet,
   createPXEClient,
   waitForSandbox,
+  getSandboxAccountsWallets
 } from '@aztec/aztec.js';
 import { createDebugLogger } from '@aztec/foundation/log';
 
@@ -44,10 +45,11 @@ describe('ZK Contract Tests', () => {
 
   beforeAll(async () => {
     pxe = await setupSandbox();
-    const accounts = await pxe.getRegisteredAccounts();
+    // const accounts = await pxe.getRegisteredAccounts();
+    const accountWallets: AccountWallet[] = await getSandboxAccountsWallets(pxe);
     [owner, _account2, _account3] = accounts;
 
-    wallet = await getWallet(owner, pxe);
+    // wallet = await getWallet(owner, pxe);
 
     contract = await deployZKContract(owner, wallet, pxe);
     contractAddress = contract.address;
