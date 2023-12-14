@@ -30,6 +30,8 @@ async function deployZKContract(owner: CompleteAddress, wallet: Wallet, pxe: PXE
   logger('Deploying Blank contract...');
   const contractAddress = await deployContract(owner, BlankContract.artifact, [], Fr.random(), pxe);
 
+  console.log("contract address", contractAddress)
+
   logger(`L2 contract deployed at ${contractAddress}`);
   return BlankContract.at(contractAddress, wallet);
 }
@@ -47,9 +49,10 @@ describe('ZK Contract Tests', () => {
     pxe = await setupSandbox();
     // const accounts = await pxe.getRegisteredAccounts();
     const accountWallets: AccountWallet[] = await getSandboxAccountsWallets(pxe);
-    [owner, _account2, _account3] = accounts;
 
-    // wallet = await getWallet(owner, pxe);
+    [owner, _account2, _account3] = accountWallets.map(a => a.getCompleteAddress())
+
+    wallet = await getWallet(owner, pxe);
 
     contract = await deployZKContract(owner, wallet, pxe);
     contractAddress = contract.address;

@@ -36,10 +36,10 @@
   },
   "dependencies": {
     "@aztec/aztec-ui": "^0.1.14",
-    "@aztec/aztec.js": "^0.15.0",
-    "@aztec/circuits.js": "^0.15.0",
-    "@aztec/cli": "^0.15.0",
-    "@aztec/foundation": "^0.15.0",
+    "@aztec/aztec.js": "0.16.9",
+    "@aztec/circuits.js": "0.16.9",
+    "@aztec/cli": "0.16.9",
+    "@aztec/foundation": "0.16.9",
     "serve": "^14.2.1"
   },
   "devDependencies": {
