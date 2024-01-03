@@ -32,8 +32,8 @@ impl UserNote {
         }
     }
 
-    pub fn new_with_randomness_and_header(user: Field, randomness: Field, contract_address: Field, storage_slot: Field) -> Self {
-        let header = NoteHeader::new(contract_address, 0, storage_slot);
+    pub fn new_with_randomness_and_header(user: Field, randomness: Field, contract_address: Field, nonce: Field, storage_slot: Field) -> Self {
+        let header = NoteHeader::new(contract_address, nonce, storage_slot);
         UserNote {
             user,
             randomness,
@@ -69,6 +69,13 @@ impl UserNote {
             note_hash_for_nullify,
             secret.low,
             secret.high,
+        ])
+    }
+
+    pub fn compute_airdrop_nullifier(self) -> Field {
+        dep::std::hash::pedersen_hash([
+            self.randomness,
+            self.user,
         ])
     }
 

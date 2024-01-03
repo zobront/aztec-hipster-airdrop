@@ -4,12 +4,19 @@ contract HipsterAirdrop {
     use dep::aztec::{
         state_vars::{
             public_state::PublicState,
+            immutable_singleton::ImmutableSingleton,
+            map::Map,
         },
         types::{
             address::AztecAddress,
-            type_serialization::field_serialization::{
-                FIELD_SERIALIZED_LEN, FieldSerializationMethods
-            };
+            type_serialization::{
+                field_serialization::{
+                    FIELD_SERIALIZED_LEN, FieldSerializationMethods
+                },
+                bool_serialization::{
+                    BOOL_SERIALIZED_LEN, BoolSerializationMethods
+                },
+            },
         },
         context::Context,
         note::{
@@ -36,6 +43,7 @@ contract HipsterAirdrop {
     struct Storage {
         app_contract: ImmutableSingleton<AztecAddress, FIELD_SERIALIZED_LEN>,
         balances: BalancesMap,
+        nullifiers: Map<bool>,
     }
 
     impl Storage {
@@ -43,6 +51,7 @@ contract HipsterAirdrop {
             Storage {
                 app_contract: ImmutableSingleton::new(context, 1, FieldSerializationMethods),
                 balances: BalancesMap::new(context, 2);
+                nullifiers: Map::new(context, 3, BoolSerializationMethods);
             }
         }
     }
@@ -53,7 +62,16 @@ contract HipsterAirdrop {
     }
 
     #[aztec(private)]
-    fn claimAirdrop(owner: AztecAddress, randomness: Field, signup_block_number: Field, last_block_number: Field) {
+    fn claimAirdrop(owner: AztecAddress, randomness: Field, nonce: Field, signup_block_number: Field, last_block_number: Field) {
+
+        ////////////////////////////////////////////
+        //////// STEP 0: GRAB DATA FROM PXE ////////
+        ////////////////////////////////////////////
+
+        // get the randomness
+        // get the nonce
+
+
 
         ////////////////////////////////////////////
         // STEP 1: VALIDATE THE SIGNUP BLOCK NOTE //
@@ -63,8 +81,8 @@ contract HipsterAirdrop {
         let block_header = context.get_block_header(signup_block_number);
 
         // compute the note commitment
-        let app_address_note = storage.app_contract.get_note();
-        let note: UserNote = UserNote::new_with_randomness_and_header(owner.address, randomness, app_address_note.address, 1);
+        let app_address_note = storage.app_contract.read();
+        let note: UserNote = UserNote::new_with_randomness_and_header(owner.address, randomness, nonce, app_address_note.address, 1);
         let note_commitment = compute_unique_siloed_note_hash(UserNoteMethods, note);
 
         // get the membership witness of the note in the note hash tree
@@ -92,15 +110,26 @@ contract HipsterAirdrop {
             get_membership_witness(last_block_number, block_tree_id, last_block_header.block_hash());
 
         // prove that the last block's hash was a part of the last block's tree
-        // note: is this verified?
         assert(
-            // maybe replace this with context.block_header.archive_note()?
+            // note: maybe replace this with context.block_header.archive_note()?
             last_block_header.archive_root ==
             dep::std::merkle::compute_merkle_rootlast_block_header.block_hash() block_witness.index, block_witness.path
         );
 
         ////////////////////////////////////////////
-        //// STEP 3: ADD PRIVATE BALANCE TO USER ///
+        //// STEP 3: CONFIRM AIRDROP UNCLAIMED /////
+        ////////////////////////////////////////////
+
+        // confirm that this airdrop has note already been claimed
+        let airdrop_nullifier = note.compute_airdrop_nullifier();
+        let nullfied = storage.nullifiers.at(airdrop_nullifier).read();
+        assert(!nullified, "airdrop already claimed");
+
+        // mark this airdrop as claimed
+        storage.nullifiers.at(airdrop_nullifier).write(true);
+
+        ////////////////////////////////////////////
+        //// STEP 4: ADD PRIVATE BALANCE TO USER ///
         ////////////////////////////////////////////
 
         storage.balances.at(owner.address).add(SafeU120::new(last_block_number - signup_block_number));
